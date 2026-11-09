@@ -11,10 +11,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
-	"todo/api/internal/platform"
 	"todo/api/internal/todo/domain"
 	"todo/api/internal/todo/postgres"
+	"todo/api/migrations"
 )
 
 func TestPostgresLifecycle(t *testing.T) {
@@ -53,11 +54,14 @@ func TestPostgresLifecycle(t *testing.T) {
 	} else {
 		databaseURL += " search_path=" + schema
 	}
-	pool, err := platform.OpenDatabase(ctx, databaseURL)
+	pool, err := pgxpool.New(ctx, databaseURL)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer pool.Close()
+	if _, err := pool.Exec(ctx, migrations.Todos); err != nil {
+		t.Fatal(err)
+	}
 	repo := postgres.New(pool)
 	todos, err := repo.List(ctx)
 	if err != nil || len(todos) != 0 {
@@ -67,12 +71,15 @@ func TestPostgresLifecycle(t *testing.T) {
 	if err != nil || first.ID <= 0 || first.Title != "first" || first.Done || first.CreatedAt.IsZero() {
 		t.Fatalf("add = %+v, %v", first, err)
 	}
-	// A second startup must preserve existing data and tolerate the existing schema.
-	secondPool, err := platform.OpenDatabase(ctx, databaseURL)
+	// Reapplying the migration must preserve existing data and tolerate the existing schema.
+	secondPool, err := pgxpool.New(ctx, databaseURL)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer secondPool.Close()
+	if _, err := secondPool.Exec(ctx, migrations.Todos); err != nil {
+		t.Fatal(err)
+	}
 	repo = postgres.New(secondPool)
 	second, err := repo.Add(ctx, "second")
 	if err != nil {

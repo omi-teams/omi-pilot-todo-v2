@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"todo/api/internal/todo/todotest"
+	"todo/api/internal/todo/domain/todotest"
 )
 
 func TestHealth(t *testing.T) {

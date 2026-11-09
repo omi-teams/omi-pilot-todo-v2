@@ -9,7 +9,7 @@ import (
 
 	"todo/api/internal/todo/app"
 	"todo/api/internal/todo/domain"
-	"todo/api/internal/todo/todotest"
+	"todo/api/internal/todo/domain/todotest"
 )
 
 func TestLifecycle(t *testing.T) {
